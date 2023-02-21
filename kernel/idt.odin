@@ -17,7 +17,7 @@ Interrupt_Descriptor :: struct #packed {
     selector: u16,
     _pad0: u8,
     attributes: u8,
-    offset_2: u16
+    offset_2: u16,
 }
 
 @(private="file")

@@ -1,7 +1,8 @@
 #!/bin/bash
 
 TARGET="freestanding_i386_sysv"
-OFLAGS="-target:$TARGET -no-entry-point -default-to-nil-allocator -reloc-mode:static -build-mode:object -disable-red-zone -strict-style -debug -keep-temp-files"
+ODIN_COMMON_FLAGS="-target:$TARGET -no-entry-point -default-to-nil-allocator"
+OFLAGS="$ODIN_COMMON_FLAGS -reloc-mode:static -build-mode:object -disable-red-zone -strict-style -debug -keep-temp-files"
 
 CLANG_TARGET="i686-freestanding-elf"
 CFLAGS="-target $CLANG_TARGET -ffreestanding -nostdlib -std=c11 -O0 -Wall -Wextra -Wimplicit-fallthrough -fno-pic -fno-pie -fno-builtin -fno-strict-aliasing -Wall -Wstrict-prototypes -Wnewline-eof -Wpointer-arith"
@@ -9,14 +10,13 @@ CFLAGS="-target $CLANG_TARGET -ffreestanding -nostdlib -std=c11 -O0 -Wall -Wextr
 OBJDIR="bin"
 KERNEL="kernel.bin"
 
-QEMU_ARGS="-accel kvm -cpu host -display sdl"
-
 REQUIRED_BINS=("clang" "nasm" "ld.lld" "qemu-system-i386")
 
 RUN_QEMU=false
 QEMU_STOPPED=
 VERBOSE=false
 VERY_VERBOSE=false
+ODIN_CHECK=false
 
 usage() {
     cat <<EUSAGE
@@ -25,6 +25,7 @@ Usage:
 
 Options:
     -g                      Start qemu in stopped state. Waiting for a connection to gdbserver.
+    -c                      Only do `odin check`
     -h,   --help            Show script usage
     -r,   --run             Run qemu after a successful build
     -v,   --verbose         Show commands when they are run
@@ -42,6 +43,10 @@ while (( $# )); do
     case $1 in
         -g)
             QEMU_STOPPED="-S"
+            shift
+            ;;
+        -c)
+            ODIN_CHECK=true
             shift
             ;;
         -r)
@@ -102,6 +107,12 @@ exit_on_err() {
     fi
 }
 
+if $ODIN_CHECK; then
+    echo CHECK kernel
+    verbose odin/odin check kernel $ODIN_COMMON_FLAGS
+    exit 0
+fi
+
 echo ODIN kernel
 exit_on_err verbose odin/odin build kernel $OFLAGS -out:$OBJDIR/kernel.o
 
@@ -119,5 +130,11 @@ echo LINK $KERNEL
 exit_on_err verbose ld.lld -o $KERNEL -T linker.ld $OBJDIR/kernel.o $OBJDIR/boot.o $OBJDIR/arith64.o $OBJDIR/irq.o $OBJDIR/io.o
 
 if $RUN_QEMU; then
+    if ! grep -qi wsl /proc/version; then
+        QEMU_ARGS="$QEMU_ARGS -accel kvm -cpu host -display sdl"
+    else
+        QEMU_ARGS="$QEMU_ARGS -display gtk"
+    fi
+
     verbose "qemu-system-i386 -kernel $KERNEL -serial stdio -d cpu_reset,guest_errors,int -no-reboot -s $QEMU_STOPPED $QEMU_ARGS"
 fi
