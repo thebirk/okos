@@ -114,7 +114,7 @@ if $ODIN_CHECK; then
 fi
 
 echo ODIN kernel
-exit_on_err verbose odin/odin build kernel $OFLAGS -out:$OBJDIR/kernel.o
+exit_on_err verbose odin/odin build kernel/arch/i386 $OFLAGS -out:$OBJDIR/kernel.o
 
 echo NASM boot.asm
 exit_on_err verbose nasm -felf32 kernel/arch/i386/boot.asm -o $OBJDIR/boot.o
@@ -124,7 +124,7 @@ echo NASM io.asm
 exit_on_err verbose nasm -felf32 kernel/arch/i386/io/io.asm -o $OBJDIR/io.o
 
 echo CC arith64.c
-exit_on_err verbose clang $CFLAGS -c kernel/arith64.c -o $OBJDIR/arith64.o
+exit_on_err verbose clang $CFLAGS -c kernel/arch/i386/arith64.c -o $OBJDIR/arith64.o
 
 echo LINK $KERNEL
 exit_on_err verbose ld.lld -o $KERNEL -T linker.ld $OBJDIR/kernel.o $OBJDIR/boot.o $OBJDIR/arith64.o $OBJDIR/irq.o $OBJDIR/io.o

@@ -32,8 +32,8 @@ _start:
     call enable_sse
     
     ; enter kernel
-    extern kmain
-    call kmain
+    extern stage2
+    call stage2
 
     cli
 .hang:
