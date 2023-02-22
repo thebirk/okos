@@ -20,14 +20,14 @@ cpuid :: intrinsics.x86_cpuid
 _cpu_name_buf: [72]u8
 cpu_name:     Maybe(string)
 
-@(init, private)
+@(private)
 init_cpu_name :: proc "c" () {
 	number_of_extended_ids, _, _, _ := cpuid(0x8000_0000, 0)
 	if number_of_extended_ids < 0x8000_0004 {
 		return
 	}
 
-	_buf := transmute(^[0x12]u32)&_cpu_name_buf
+	_buf := transmute(^[12]u32)&_cpu_name_buf
 	_buf[ 0], _buf[ 1], _buf[ 2], _buf[ 3] = cpuid(0x8000_0002, 0)
 	_buf[ 4], _buf[ 5], _buf[ 6], _buf[ 7] = cpuid(0x8000_0003, 0)
 	_buf[ 8], _buf[ 9], _buf[10], _buf[11] = cpuid(0x8000_0004, 0)

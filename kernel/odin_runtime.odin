@@ -50,14 +50,3 @@ memcpy :: proc "c" (dst, src: rawptr, len: int) -> rawptr
     }
     return d
 }
-
-/*
-@export
-__udivdi3 :: proc() {}
-@export
-__umoddi3 :: proc() {}
-@export
-__moddi3 :: proc() {}
-@export
-__divdi3 :: proc() {}
-*/

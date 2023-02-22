@@ -4,17 +4,17 @@ import core_fmt "core:fmt"
 import "core:mem"
 import "arch/i386/io"
 
-@(private)
+@(private="file")
 state: struct {
     x, y: int,
     width, height: int,
     fg, bg: u16,
 }
 
-@(private)
+@(private="file")
 vga: []u16 = mem.slice_ptr(cast(^u16) (uintptr(0xB8000)), 80*25)
 
-@private
+@(private="file")
 update_cursor :: proc()
 {
     pos := state.x + state.y * state.width

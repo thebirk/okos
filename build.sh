@@ -1,8 +1,8 @@
 #!/bin/bash
 
 TARGET="freestanding_i386_sysv"
-ODIN_COMMON_FLAGS="-target:$TARGET -no-entry-point -default-to-nil-allocator"
-OFLAGS="$ODIN_COMMON_FLAGS -reloc-mode:static -build-mode:object -disable-red-zone -strict-style -debug -keep-temp-files"
+ODIN_COMMON_FLAGS="-target:$TARGET -no-entry-point -default-to-nil-allocator -strict-style"
+OFLAGS="$ODIN_COMMON_FLAGS -reloc-mode:static -build-mode:object -disable-red-zone -debug -keep-temp-files"
 
 CLANG_TARGET="i686-freestanding-elf"
 CFLAGS="-target $CLANG_TARGET -ffreestanding -nostdlib -std=c11 -O0 -Wall -Wextra -Wimplicit-fallthrough -fno-pic -fno-pie -fno-builtin -fno-strict-aliasing -Wall -Wstrict-prototypes -Wnewline-eof -Wpointer-arith"
