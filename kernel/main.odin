@@ -1,7 +1,7 @@
 package kernel
 
 import "core:mem"
-import "kfmt"
+import "kos:kfmt"
 
 @export
 kmain :: proc() -> !

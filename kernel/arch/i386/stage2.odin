@@ -1,9 +1,9 @@
 package i386
 
-import kernel "../../."
-import "../../kfmt"
-import "x86_terminal"
-import kcontext "context"
+import kernel "kos:."
+import "kos:kfmt"
+import "kos:arch/i386/x86_terminal"
+import "kos:arch/i386/kcontext"
 
 foreign {
     //kmain :: proc() -> ! ---

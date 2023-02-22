@@ -1,7 +1,10 @@
 #!/bin/bash
 
+ROOT="$(realpath $(dirname -- "${BASH_SOURCE[0]}"))"
+cd $ROOT
+
 TARGET="freestanding_i386_sysv"
-ODIN_COMMON_FLAGS="-target:$TARGET -no-entry-point -default-to-nil-allocator -strict-style"
+ODIN_COMMON_FLAGS="-target:$TARGET -no-entry-point -default-to-nil-allocator -strict-style -collection:kos=\"$ROOT/kernel\""
 OFLAGS="$ODIN_COMMON_FLAGS -reloc-mode:static -build-mode:object -disable-red-zone -debug -keep-temp-files"
 
 CLANG_TARGET="i686-freestanding-elf"

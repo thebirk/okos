@@ -2,7 +2,7 @@ package i386
 
 import "core:math/bits"
 
-import "../../kfmt"
+import "kos:kfmt"
 
 @(private="file")
 Interrupt_Descriptor_Attribute :: enum u8 {

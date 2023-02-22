@@ -2,8 +2,8 @@ package x86_terminal
 
 import "core:mem"
 
-import "../io"
-import "../../../kfmt"
+import "kos:kfmt"
+import "kos:arch/i386/io"
 
 x86_terminal_device := kfmt.Kfmt_Device {
     write_string = write_string,
