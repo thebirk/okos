@@ -8,7 +8,9 @@ kmain :: proc() -> !
     kfmt.logf("kmain", "booting")
 
     for {
-        for _ in 0..<10000000 {}
-        kfmt.printf("Hello, world!")
+        //for _ in 0..<10000000 {}
+        //kfmt.printf("Hello, world!")
+        asm { "sti; hlt", "" }()
+        kfmt.logf("hlt", "Tick!")
     }
 }

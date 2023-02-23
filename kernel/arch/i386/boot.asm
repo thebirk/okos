@@ -28,6 +28,7 @@ _start:
 
     ; set stack
     mov esp, stack_top
+    push cs
 
     call enable_sse
     

@@ -1,4 +1,5 @@
 #!/bin/bash
+shopt -s extglob 
 
 ROOT="$(realpath $(dirname -- "${BASH_SOURCE[0]}"))"
 cd $ROOT
@@ -14,12 +15,19 @@ OBJDIR="bin"
 KERNEL="kernel.bin"
 
 REQUIRED_BINS=("clang" "nasm" "ld.lld" "qemu-system-i386")
+ASM_SRC=(
+    "arch/i386/io/io.asm"
+    "arch/i386/irq/irq.asm"
+    "arch/i386/boot.asm"
+)
+OBJS=()
 
 RUN_QEMU=false
 QEMU_STOPPED=
 VERBOSE=false
 VERY_VERBOSE=false
 ODIN_CHECK=false
+CLEAN=false
 
 usage() {
     cat <<EUSAGE
@@ -33,6 +41,8 @@ Options:
     -r,   --run             Run qemu after a successful build
     -v,   --verbose         Show commands when they are run
     -V,   --very-verbose    Enable bash debug output
+
+    --clean                 Delete object files and kernel binary
 
 Commands:
 
@@ -67,6 +77,10 @@ while (( $# )); do
         -h|--help)
             usage
             exit 2
+            shift
+            ;;
+        --clean)
+            CLEAN=true
             shift
             ;;
         -*|--*)
@@ -110,6 +124,14 @@ exit_on_err() {
     fi
 }
 
+if $CLEAN; then
+    echo CLEAN bin/
+    exit_on_err verbose find bin -not -name '.gitkeep' -not -name 'bin' -delete
+    echo CLEAN kernel.bin
+    exit_on_err verbose rm -f kernel.bin
+    exit 0
+fi
+
 if $ODIN_CHECK; then
     echo CHECK kernel
     verbose odin/odin check kernel $ODIN_COMMON_FLAGS
@@ -118,19 +140,21 @@ fi
 
 echo ODIN kernel
 exit_on_err verbose odin/odin build kernel/arch/i386 $OFLAGS -out:$OBJDIR/kernel.o
+OBJ+=("$OBJDIR/kernel.o")
 
-echo NASM boot.asm
-exit_on_err verbose nasm -felf32 kernel/arch/i386/boot.asm -o $OBJDIR/boot.o
-echo NASM irq.asm
-exit_on_err verbose nasm -felf32 kernel/arch/i386/irq.asm -o $OBJDIR/irq.o
-echo NASM io.asm
-exit_on_err verbose nasm -felf32 kernel/arch/i386/io/io.asm -o $OBJDIR/io.o
+for asm in "${ASM_SRC[@]}"; do
+    echo NASM $asm
+    exit_on_err verbose mkdir -p $(dirname "bin/${asm%.asm}.o")
+    exit_on_err verbose nasm -felf32 kernel/$asm -o "bin/${asm%.asm}.o"
+    OBJ+=("bin/${asm%.asm}.o")
+done
 
 echo CC arith64.c
 exit_on_err verbose clang $CFLAGS -c kernel/arch/i386/arith64.c -o $OBJDIR/arith64.o
+OBJ+=("$OBJDIR/arith64.o")
 
 echo LINK $KERNEL
-exit_on_err verbose ld.lld -o $KERNEL -T linker.ld $OBJDIR/kernel.o $OBJDIR/boot.o $OBJDIR/arith64.o $OBJDIR/irq.o $OBJDIR/io.o
+exit_on_err verbose ld.lld -o $KERNEL -T linker.ld ${OBJ[@]}
 
 if $RUN_QEMU; then
     if ! grep -qi wsl /proc/version; then

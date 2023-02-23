@@ -4,6 +4,9 @@ import kernel "kos:."
 import "kos:kfmt"
 import "kos:arch/i386/x86_terminal"
 import "kos:arch/i386/kcontext"
+import "kos:arch/i386/io"
+import "kos:arch/i386/irq"
+import "kos:arch/i386/pic8259"
 
 foreign {
     //kmain :: proc() -> ! ---
@@ -14,9 +17,8 @@ foreign {
     double_fault :: proc"naked"() ---
 }
 
-
 @(export)
-stage2 :: proc"contextless"() -> !
+stage2 :: proc"contextless"(cs: u16) -> !
 {
     context = kcontext.kernel_context()
     __startup_runtime()
@@ -28,7 +30,9 @@ stage2 :: proc"contextless"() -> !
     init_cpu_name()
     kfmt.logf("cpu", "%v", cpu_name)
     
-    idt_init()
+    irq.idt_init(cs)
+
+    io.outb(0x64, 0xAE)
 
     kernel.kmain()
 }
