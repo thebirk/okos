@@ -28,8 +28,10 @@ _start:
 
     ; set stack
     mov esp, stack_top
+    push ds
     push cs
-
+    push ebx
+    
     call enable_sse
     
     ; enter kernel

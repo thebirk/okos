@@ -18,6 +18,7 @@ _init_kernel_context :: proc"contextless"(c: ^runtime.Context)
 
 kernel_assertion_failure_proc :: proc(prefix, message: string, loc: runtime.Source_Code_Location) -> !
 {
+    asm { "cli", "" }()
     vga: []u16 = mem.slice_ptr(cast(^u16) (uintptr(0xB8000)), 80*25)
     msg := "! ASSERTION FAILURE !"
     for ch, i in msg {

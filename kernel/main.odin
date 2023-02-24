@@ -5,12 +5,12 @@ import "kos:kfmt"
 
 kmain :: proc() -> !
 {
-    kfmt.logf("kmain", "booting")
+    kfmt.logf("kmain", "Booting kOS..")
 
     for {
         //for _ in 0..<10000000 {}
+        asm { "hlt", "" }()
         //kfmt.printf("Hello, world!")
-        asm { "sti; hlt", "" }()
-        kfmt.logf("hlt", "Tick!")
+        kfmt.logf("hlt", "woke up!")
     }
 }

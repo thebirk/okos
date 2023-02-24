@@ -9,6 +9,7 @@ cpu_name:     Maybe(string)
 @(private)
 _cpu_name_buf: [72]u8
 
+@(init)
 init_cpu_name :: proc "c" () {
 	number_of_extended_ids, _, _, _ := cpuid(0x8000_0000, 0)
 	if number_of_extended_ids < 0x8000_0004 {

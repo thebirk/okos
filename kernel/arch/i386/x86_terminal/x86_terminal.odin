@@ -71,6 +71,7 @@ init :: proc()
 
 write_string :: proc(str: string)
 {
+    asm { "cli", "" }()
     for ch in str {
         // for _ in 0..<10000000 {}
 
@@ -105,11 +106,23 @@ write_string :: proc(str: string)
 
         update_cursor()
     }
+    asm { "sti", "" }()
 }
 
 com1_write_string :: proc(str: string)
 {
+    asm { "cli", "" }()
+    io.outb(0x3F8, '\e')
+    io.outb(0x3F8, '[')
+    io.outb(0x3F8, '3')
+    io.outb(0x3F8, '6')
+    io.outb(0x3F8, 'm')
     for ch in transmute([]byte) str {
         io.outb(0x3F8, u8(ch))
     }
+    io.outb(0x3F8, '\e')
+    io.outb(0x3F8, '[')
+    io.outb(0x3F8, '0')
+    io.outb(0x3F8, 'm')
+    asm { "sti", "" }()
 }
