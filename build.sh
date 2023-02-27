@@ -28,6 +28,7 @@ VERBOSE=false
 VERY_VERBOSE=false
 ODIN_CHECK=false
 CLEAN=false
+QEMU_WINDOWS=false
 
 usage() {
     cat <<EUSAGE
@@ -41,6 +42,7 @@ Options:
     -r,   --run             Run qemu after a successful build
     -v,   --verbose         Show commands when they are run
     -V,   --very-verbose    Enable bash debug output
+    -w                      If running under WSL try running qemu on windows
 
     --clean                 Delete object files and kernel binary
 
@@ -81,6 +83,10 @@ while (( $# )); do
             ;;
         --clean)
             CLEAN=true
+            shift
+            ;;
+        -w)
+            QEMU_WINDOWS=true
             shift
             ;;
         -*|--*)
@@ -163,5 +169,10 @@ if $RUN_QEMU; then
         QEMU_ARGS="$QEMU_ARGS -display gtk"
     fi
 
-    verbose "qemu-system-i386 -kernel $KERNEL -serial stdio -d cpu_reset,guest_errors,int -no-reboot -s $QEMU_STOPPED $QEMU_ARGS"
+    QEMU_CMD="qemu-system-i386"
+    if $QEMU_WINDOWS; then
+        QEMU_CMD="qemu-system-i386.exe"
+    fi
+    
+    verbose "$QEMU_CMD -kernel $KERNEL -serial stdio -d cpu_reset,guest_errors,int -no-reboot $QEMU_STOPPED $QEMU_ARGS"
 fi

@@ -1,6 +1,7 @@
 [bits 32]
-MB_ALIGN    equ 1<<0
-MB_MEMINFO  equ 1<<1
+MB_ALIGN        equ 1<<0
+MB_MEMINFO      equ 1<<1
+MB_GRAPHICSINFO equ 1<<2
 MB_FLAGS    equ MB_ALIGN | MB_MEMINFO
 MB_MAGIC    equ 0x1BADB002
 MB_CHECKSUM equ -(MB_MAGIC + MB_FLAGS)

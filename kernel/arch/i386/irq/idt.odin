@@ -27,7 +27,7 @@ Interrupt_Descriptor :: struct #packed {
 }
 #assert(size_of(Interrupt_Descriptor) == 8)
 
-Interrupt_Handler :: #type proc()
+Interrupt_Handler :: #type proc(registers: Registers)
 
 Registers :: struct #packed {
     gs, fs, es, ds: u32,
@@ -148,36 +148,25 @@ isr_handler :: proc"contextless"(regs: Registers)
     //kfmt.logf("irq", "interrupt: %#v", regs)
     //kfmt.logf("irq", "Interrupt %v", regs.interrupt)
 
+    //TODO: Complain if interrupts are enabled!
     //TODO: Handle spurious interrupts
     
     if regs.interrupt >= 0 && regs.interrupt <= 31
     {
         asm { "cli", "" }()
         kfmt.logf("PANIC", "Exception: 0x%0X/%s", regs.interrupt, exception_mnemonic[Exception(regs.interrupt)])
-    }
-
-    if regs.interrupt == 32 + 1
-    {
-        ch := io.inb(0x60)
-        //kfmt.logf("ps2", "Keyinput: %c", ch)
-        kfmt.printf("PORT1: %0X\n", ch)
-    }
-
-    if regs.interrupt == 32 + 12
-    {
-        ch := io.inb(0x60)
-        //kfmt.logf("ps2", "Keyinput: %c", ch)
-        kfmt.printf("PORT2: %0X\n", ch)
-    }
-
-    if regs.interrupt == 32 + 4
-    {
-        ch := io.inb(0x3F8)
-        kfmt.printf("COM1: %0X\n", ch)
+        for {
+            asm { "hlt", "" }()
+        }
     }
 
     if regs.interrupt >= 32 && regs.interrupt <= 48
     {
+        if interrupt_handlers[regs.interrupt] != nil
+        {
+            interrupt_handlers[regs.interrupt](regs)
+        }
+
         // EOI - end of interrupt
         io.outb(0x20, 0x20)
     }
@@ -243,11 +232,45 @@ idt_init :: proc(cs: u16, ds: u16)
     set_interrupt_descriptor(47, rawptr(isr_47), cs, .Present | .Gate_Interrupt_32)
     set_interrupt_descriptor(48, rawptr(isr_48), cs, .Present | .Gate_Interrupt_32)
 
+    register_irq_handler(1, proc(registers: Registers) {
+        // PS/2 Port 1
+        ch := io.inb(0x60)
+        kfmt.printf("PORT1: %0X\n", ch)
+    })
+
+    register_irq_handler(12, proc(registers: Registers) {
+        // PS/2 Port 2
+        ch := io.inb(0x60)
+        kfmt.printf("PORT2: %0X\n", ch)
+    })
+
+    register_irq_handler(4, proc(registers: Registers) {
+        // Serial
+        ch := io.inb(0x3F8)
+        kfmt.printf("COM1: %0X\n", ch)
+    })
+
 
     kfmt.logf("irq", "load idt")
-    // IRQ 1 - Set present
-    //interrupt_descriptors[9].attributes |= 0b1_00_0_0000
     load_idt(size_of(Interrupt_Descriptor) * len(interrupt_descriptors) - 1, &interrupt_descriptors[0], ds)
+}
+
+register_irq_handler :: proc(irq: int, handler: Interrupt_Handler) -> bool
+{
+    if irq < 0 || irq >= 16
+    {
+        kfmt.logf("irq", "register_irq_handler: irq %d out of range 0..15", irq)
+        return false
+    }
+
+    if interrupt_handlers[32+irq] != nil
+    {
+        kfmt.logf("irq", "attempted to register irq handler for IRQ%d, but it was already registered", irq)
+        return false
+    }
+
+    interrupt_handlers[32 + irq] = handler
+    return true
 }
 
 foreign {

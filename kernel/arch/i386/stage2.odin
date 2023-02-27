@@ -41,37 +41,75 @@ stage2 :: proc"contextless"(ebx: u32, cs: u16, ds: u16) -> !
     pic8259.remap_interrupts()
     irq.idt_init(cs, ds)
 
-    // Disable both ports
-    io.outb(0x64, 0xAD)
-    io.outb(0x64, 0xA7)
+    { // Keyboard controller
+        // Disable both ports
+        io.outb(0x64, 0xAD)
+        io.outb(0x64, 0xA7)
 
-    // Read until status register indicated empty buffer
-    i8042_empty_buffer()
+        // Read until status register indicated empty buffer
+        i8042_empty_buffer()
 
-    // Disable irq and translation
-    conf_byte := io.inb(0x20)
-    conf_byte &= ~u8(0b1000011)
-    i8042_wait_write()
-    io.outb(0x60, conf_byte)
+        // Disable irq and translation
+        conf_byte := io.inb(0x20)
+        conf_byte &= ~u8(0b1000011)
+        i8042_wait_write()
+        io.outb(0x60, conf_byte)
 
-    //TODO: test bit 5 for dual channel
+        //TODO: test bit 5 for dual channel
 
-    // Self-test
-    io.outb(0x64, 0xAA)
-    i8042_wait_read()
-    if result := io.inb(0x60); result != 0x55
-    {
-        kfmt.logf("i8042", "Self test failed")
+        // Self-test
+        io.outb(0x64, 0xAA)
+        i8042_wait_read()
+        if result := io.inb(0x60); result != 0x55
+        {
+            kfmt.logf("i8042", "Self test failed")
+        }
+
+        io.outb(0x64, 0xAE)
+        io.outb(0x64, 0xA8)
+        i8042_wait_write()
+        io.outb(0x60, 0b00000011)
+
+        io.outb(0x64, 0xFF)
+        i8042_wait_read()
+        io.inb(0x60)
     }
 
-    io.outb(0x64, 0xAE)
-    io.outb(0x64, 0xA8)
-    i8042_wait_write()
-    io.outb(0x60, 0b00000011)
 
-    io.outb(0x64, 0xFF)
-    i8042_wait_read()
-    io.inb(0x60)
+
+    { // RTC
+        io.outb(0x70, (io.inb(0x70) & 0b1000_0000) | 0x0B)
+        status_reg_b := io.inb(0x71)
+
+        binary := status_reg_b & 4 > 0
+        _24hour := status_reg_b & 2 > 0
+
+        io.outb(0x70, (io.inb(0x70) & 0b1000_0000) | 0x00)
+        seconds := io.inb(0x71)
+        io.outb(0x70, (io.inb(0x70) & 0b1000_0000) | 0x02)
+        minutes := io.inb(0x71)
+        io.outb(0x70, (io.inb(0x70) & 0b1000_0000) | 0x04)
+        hours := io.inb(0x71)
+
+        if binary 
+        {
+            kfmt.logf(
+                "rtc",
+                "current time %s%02d:%02d:%02d",
+                _24hour ? "" : (hours & 0b1000_0000 > 0) ? "PM" : "AM",
+                hours, minutes, seconds
+            )
+        }
+        else
+        {
+            kfmt.logf(
+                "rtc",
+                "current time %s%02X:%02X:%02X",
+                _24hour ? "" : (hours & 0b1000_0000 > 0) ? "PM " : "AM ",
+                hours, minutes, seconds
+            )
+        }
+    }
 
     kfmt.logf("irq", "enabling interrupts")
     asm { "sti", "" }()
